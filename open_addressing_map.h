@@ -7,9 +7,104 @@
 #include <vector>
 #include <string>
 
+namespace hash_tables {
+
+namespace internal {
+	template <typename T, bool is_const>
+	class iterator {
+	public:
+		using iterator_category	= std::random_access_iterator_tag;
+		using value_type = T;
+		using difference_type = std::ptrdiff_t;
+		using size_type = std::size_t;
+		/* depending on constancy we must have different reference and pointer types */
+		using reference = typename std::conditional<is_const, const value_type &, value_type &>::type;
+		using pointer = typename std::conditional<is_const, const value_type *, value_type *>::type;
+
+		/* to enable connection between const and non-const implementations */
+		friend class iterator<T, true>;
+		friend class iterator<T, false>;
+
+		iterator(std::vector<reference> table, size_type index) {
+			_table = &table;
+			idx = index;
+		}
+
+		/* increment & decrement operators */
+		iterator &operator++() {
+			++idx;
+			return *this;
+		}
+		iterator &operator++(int) {
+			iterator tmp(*_table, idx);
+			++idx;
+			return tmp;
+		}
+		iterator &operator--() {
+			--idx;
+			return *this;
+		}
+		iterator &operator--(int) {
+			iterator tmp(*_table, idx);
+			--idx;
+			return tmp;
+		}
+		reference operator[](size_type index) {
+			return _table[index];
+		}
+		/* access operators */
+		reference operator*() const {
+			return _table[idx];
+		}
+		pointer operator->() const {
+			return &_table[idx];
+		}
+		/* compare operators */
+		/**
+		* Template parameter is needed to enable this methods work with
+		* non-constant and constant iterators
+		*/
+		template <bool C>
+		bool operator==(const iterator<T, C> &rhs) const {
+			return idx == rhs.idx;
+		}
+		template <bool C>
+		bool operator!=(const iterator<T, C> &rhs) const {
+			return idx != rhs.idx;
+		}
+		template <bool C>
+		bool operator<(const iterator<T, C> &rhs) const {
+			return idx < rhs.idx;
+		}
+		template <bool C>
+		bool operator>(const iterator<T, C> &rhs) const {
+			return idx > rhs.idx;
+		}
+		template <bool C>
+		bool operator<=(const iterator<T, C> &rhs) const {
+			return idx <= rhs.idx;
+		}
+		template <bool C>
+		bool operator>=(const iterator<T, C> &rhs) const {
+			return idx >= rhs.idx;
+		}
+
+	private:
+		std::vector<T> *_table; /* pointer to underlying vector */
+		size_type idx; /* index for current iterator position */
+
+	};
+}
+
 template<class Key, class T, class Hash1 = std::hash<Key>, class Hash2 = std::hash<Key>>
 class open_addressing_map
 {
+public:
+	using iterator = internal::iterator<std::pair<Key, T>, false>;
+	using const_iterator = internal::iterator<std::pair<Key, T>, true>;
+	using reverse_iterator = std::reverse_iterator<iterator>;
+	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
 private:
 	enum CellState : char
 	{
@@ -93,4 +188,26 @@ public:
 			}
 		}
 	}
+
+	iterator begin() {
+		return iterator(data_, 0);
+	}
+	const_iterator begin() const {
+		return const_iterator(data_, 0);
+	}
+	const_iterator cbegin() const {
+		return const_iterator(data_, 0);
+	}
+
+	iterator end() {
+		return iterator(data_, initial_capacity);
+	}
+	const_iterator end() const {
+		return const_iterator(data_, initial_capacity);
+	}
+	const_iterator cend() const {
+		return const_iterator(data_, initial_capacity);
+	}
 };
+
+} /* namespace hash_tables */
