@@ -61,7 +61,6 @@ namespace internal {
 		}
 		/* compare operators */
 		/**
-		* Compare methods
 		* Template parameter is needed to enable this methods work with
 		* non-constant and constant iterators
 		*/
